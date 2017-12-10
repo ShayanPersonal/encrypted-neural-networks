@@ -2,7 +2,6 @@ import numpy as np
 
 # TODO: -1 decrypts to 0. Maybe fix? Not important for neural networks
 
-
 l = 100
 w = 2**40
 a_bound, e_bound, t_bound = 100, 1000, 100
