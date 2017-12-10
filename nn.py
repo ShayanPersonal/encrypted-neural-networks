@@ -15,7 +15,7 @@ S_server = get_secret_key(T_server) # Not necessary
 
 class encrypted_network():
     def __init__(self):
-        self.linear_layer = np.random.normal(0, 0.1, (2,1))
+        self.linear_layer = np.random.normal(0.5, 0.1, (2,1))
         self.bias = np.random.normal(0, 0.1, (1,))
 
     def __call__(self, x, target=None):
@@ -23,15 +23,20 @@ class encrypted_network():
 
     def forward(self, input, target=None):
         if target is None:
-            y = self._dot(input)
+            y = self.encrypted_dot(input)
         else:
             y = np.dot(input, self.linear_layer) + self.bias
-            deriv_lin = (target - y) * input
-            deriv_bias = (target - y)
-            self.bias += 0.01 * deriv_bias
-            self.linear_layer += 0.01 * np.expand_dims(deriv_lin, 1)
+            y = self.activation(y)
+            deriv_lin = -(target - y) * y * input
+            deriv_bias = -(target - y) * y
+            self.bias -= 0.0001 * deriv_bias
+            self.linear_layer -= 0.0001 * np.expand_dims(deriv_lin, 1)
 
         return y
+
+    def activation(self, x):
+        # Polynomial activation function
+        return x * x
 
     def _scale_floats_up(self, floats):
         floats = floats * 10000
@@ -41,7 +46,7 @@ class encrypted_network():
         floats = floats.astype(np.float32) / 10000
         return floats
 
-    def _dot(self, x):
+    def encrypted_dot(self, x):
         M = inner_prod_client(T_server)
         scaled_linear = self._scale_floats_up(self.linear_layer)
         encry_linear = encrypt(T_server, scaled_linear[:, 0])
@@ -65,9 +70,11 @@ def get_dataset():
 x_data, y_data = get_dataset()
 net = encrypted_network()
 
-for i in range(1000):
+for epoch in range(100001):
     for x, y in zip(x_data, y_data):
-        print("Epoch {}: Input {}   Output {}".format(i, (x,y), net(x, target=y)))
+        output = net(x, target=y)
+        if epoch % 10000 == 0:
+            print("Epoch {}: Input {}   Output {}".format(epoch, (x,y), output))
 
 
 print("Testing AND prediction with encrypted 1, 1 as input.")
