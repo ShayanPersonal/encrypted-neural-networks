@@ -23,20 +23,28 @@ class encrypted_network():
 
     def forward(self, input, target=None):
         if target is None:
-            y = self.encrypted_dot(input)
+            # Assume input is encrypted and don't perform gradient descent
+            y = self.encrypted_dot(input) + self.encrypted_bias(input)
+            #y = self.encrypted_activation(y)
         else:
+            # Input is unencrypted, perform gradient descent
             y = np.dot(input, self.linear_layer) + self.bias
-            y = self.activation(y)
-            deriv_lin = -(target - y) * y * input
-            deriv_bias = -(target - y) * y
+            #y = self.activation(y)
+            deriv_lin = -(target - y) * input   # if y > 0 else 0
+            deriv_bias = -(target - y)          # if y > 0 else 0
             self.bias -= 0.0001 * deriv_bias
             self.linear_layer -= 0.0001 * np.expand_dims(deriv_lin, 1)
-
         return y
 
     def activation(self, x):
-        # Polynomial activation function
-        return x * x
+        # ReLU activation function
+        return np.max(x, 0)
+
+    def encrypted_activation(self, x):
+        # Encrypted ReLU
+        # TODO: Figure out encrypted ReLU
+        print(encrypt(S_client, np.array([0])))
+        return np.max(x, encrypt(S_client, np.array([0])))
 
     def _scale_floats_up(self, floats):
         floats = floats * 10000
@@ -50,11 +58,14 @@ class encrypted_network():
         M = inner_prod_client(T_server)
         scaled_linear = self._scale_floats_up(self.linear_layer)
         encry_linear = encrypt(T_server, scaled_linear[:, 0])
+        y = inner_prod(x, encry_linear, M)
+        return y
+
+    def encrypted_bias(self, x):
         scaled_bias = self._scale_floats_up(self.bias)
         encry_bias = encrypt(T_server, scaled_bias)
-        y = inner_prod(x, encry_linear, M) + encry_bias
-        
-        return y
+        return encry_bias
+
 
 def get_dataset():
     x = []
@@ -70,7 +81,7 @@ def get_dataset():
 x_data, y_data = get_dataset()
 net = encrypted_network()
 
-for epoch in range(100001):
+for epoch in range(10001):
     for x, y in zip(x_data, y_data):
         output = net(x, target=y)
         if epoch % 10000 == 0:

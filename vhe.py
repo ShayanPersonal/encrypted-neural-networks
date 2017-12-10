@@ -98,10 +98,10 @@ def inner_prod_client(T):
 
 
 if __name__ == "__main__":
-    N = 3
+    N = 2
   
-    x1 = np.random.randint(-50000, 50000, (N))
-    x2 = np.random.randint(-50000, 50000, (N))
+    x1 = np.random.randint(-2, 2, (N))
+    x2 = np.random.randint(-500, 500, (N))
 
     T = get_random_matrix(N, N, t_bound)
 
@@ -111,19 +111,36 @@ if __name__ == "__main__":
     c3 = c1 + c2
     p1 = decrypt(S, c1)
     p3 = decrypt(S, c3)
-    print(decrypt(S, -c1))
+
     print(x1)
     print(c1)
+
+    """
+    print(decrypt(S, c1))
+    print("input x1", x1)
+    print(c1)
     print(p1)
-    print(x2)
+    print("input x2", x2)
     print(x1 + x2)
     print(decrypt(S, c1 + c2))
     
     M = inner_prod_client(T)
-    cc = inner_prod(c1, c2, M)
+    print(c1)
+    cc = inner_prod(c1, c1, M)
     dxx = decrypt(S, cc)
-    xx = np.dot(x1, x2)
+    xx = np.dot(x1, x1)
 
     print("xx", xx)
     print("dxx", dxx[0])
     print("dot product difference", xx - dxx[0])
+
+    def activation_hack(x):
+        M = inner_prod_client(T)
+        x = encrypt(T, np.array([x], dtype=np.int64))
+        y = inner_prod(x, x, M)
+        return y
+
+    #square = np.vectorize(activation_hack)
+    #print(decrypt(S, c1))
+    #print(decrypt(S, square(c1)))
+    """
